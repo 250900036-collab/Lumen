@@ -71,12 +71,15 @@ btn.addEventListener("click", async () => {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
+
     oscillator.type = "sawtooth";
     oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
     oscillator.frequency.linearRampToValueAtTime(1400, audioCtx.currentTime + 1);
+
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
     gainNode.gain.value = 1;
+
     oscillator.start();
 
     // Activar cámara
@@ -90,7 +93,7 @@ btn.addEventListener("click", async () => {
         alert("Permite acceso a la cámara");
     }
 
-    // Obtener ubicación y abrir WhatsApp
+    // Obtener ubicación y abrir WhatsApp SIN número fijo
     if(navigator.geolocation){
         navigator.geolocation.getCurrentPosition(function(position){
 
@@ -99,12 +102,10 @@ btn.addEventListener("click", async () => {
 
             const mensaje =
             "🚨 NECESITO AYUDA 🚨\n\n" +
-            "Mi ubicación en tiempo real:\n" +
+            "Mi ubicación:\n" +
             "https://maps.google.com/?q=" + lat + "," + lon;
 
-            const numero = "5213319079914";
-
-            const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(mensaje);
+            const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(mensaje);
 
             window.location.href = url;
 
