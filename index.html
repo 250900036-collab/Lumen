@@ -17,19 +17,12 @@ body{
   align-items:center;
   flex-direction:column;
   text-align:center;
-  overflow:hidden;
 }
 
-#pantallaInicio{
+#inicio{
   display:flex;
   flex-direction:column;
   align-items:center;
-}
-
-h1{
-  position:absolute;
-  top:30px;
-  letter-spacing:4px;
 }
 
 button{
@@ -43,14 +36,6 @@ button{
   font-weight:bold;
   cursor:pointer;
   box-shadow:0 0 60px red;
-}
-
-button:active{
-  transform:scale(0.95);
-}
-
-p{
-  margin-top:25px;
 }
 
 #cameraScreen{
@@ -72,10 +57,11 @@ video{
 </head>
 <body>
 
-<div id="pantallaInicio">
+<div id="inicio">
   <h1>LUMEN</h1>
   <button onclick="activarSOS()">SOS</button>
   <p>Presiona si necesitas ayuda</p>
+  <div id="estado"></div>
 </div>
 
 <div id="cameraScreen">
@@ -83,59 +69,66 @@ video{
 </div>
 
 <script>
-let sirena;
 
 function activarSOS(){
 
-  // 🔊 Sirena fuerte generada por frecuencia
+  // 🔊 Sirena más fuerte tipo oscilador
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const oscillator = ctx.createOscillator();
-  const gainNode = ctx.createGain();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
 
-  oscillator.type = "sawtooth";
-  oscillator.frequency.setValueAtTime(800, ctx.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 1);
-  gainNode.gain.setValueAtTime(1, ctx.currentTime);
+  osc.type = "square";
+  osc.frequency.value = 1000;
+  gain.gain.value = 1;
 
-  oscillator.connect(gainNode);
-  gainNode.connect(ctx.destination);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
 
-  oscillator.start();
-  setTimeout(() => oscillator.stop(), 5000);
+  setTimeout(()=> osc.stop(), 5000);
 
   // 📳 Vibración
   if(navigator.vibrate){
     navigator.vibrate([1000,500,1000]);
   }
 
-  // 📍 Obtener ubicación y abrir WhatsApp
+  // 📹 Activar cámara primero
+  navigator.mediaDevices.getUserMedia({video:true, audio:true})
+  .then(stream=>{
+      document.getElementById("inicio").style.display="none";
+      document.getElementById("cameraScreen").style.display="block";
+      document.getElementById("video").srcObject = stream;
+  })
+  .catch(error=>{
+      document.getElementById("estado").innerText = 
+      "Error cámara: " + error.message;
+  });
+
+  // 📍 Obtener ubicación
   if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(function(position){
+    navigator.geolocation.getCurrentPosition(
+      function(position){
+        let lat = position.coords.latitude;
+        let lon = position.coords.longitude;
 
-      let lat = position.coords.latitude;
-      let lon = position.coords.longitude;
-
-      let mensaje = 
+        let mensaje =
         "🚨 NECESITO AYUDA 🚨%0A" +
         "Mi ubicación:%0A" +
         "https://www.google.com/maps?q=" + lat + "," + lon;
 
-      // 🔹 CAMBIA EL NUMERO POR EL QUE QUIERAS
-      let numero = "5213319079914"; 
-      
-      window.open("https://wa.me/" + numero + "?text=" + mensaje, "_blank");
+        let numero = "521XXXXXXXXXX"; // CAMBIA ESTO
 
-    });
+        // Redirección directa (no popup)
+        window.location.href =
+        "https://wa.me/" + numero + "?text=" + mensaje;
+
+      },
+      function(error){
+        document.getElementById("estado").innerText =
+        "Error ubicación: activa permisos en Safari";
+      }
+    );
   }
-
-  // 📹 Cambiar a pantalla cámara
-  document.getElementById("pantallaInicio").style.display="none";
-  document.getElementById("cameraScreen").style.display="block";
-
-  navigator.mediaDevices.getUserMedia({ video:true, audio:true })
-  .then(stream=>{
-    document.getElementById("video").srcObject=stream;
-  });
 
 }
 </script>
