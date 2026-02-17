@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,130 +7,113 @@
 
 <style>
 body{
-  margin:0;
-  height:100vh;
-  font-family:Arial, sans-serif;
-  background: radial-gradient(circle at center, #7b2cff, #1a0033);
-  color:white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  text-align:center;
+margin:0;
+height:100vh;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+background: radial-gradient(circle at center, #6a00ff, #1a001f);
+font-family:Arial;
+color:white;
+overflow:hidden;
 }
 
-#inicio{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
+#sosBtn{
+width:220px;
+height:220px;
+border-radius:50%;
+background:red;
+color:white;
+font-size:40px;
+border:none;
+box-shadow:0 0 40px red;
 }
 
-button{
-  width:220px;
-  height:220px;
-  border-radius:50%;
-  border:none;
-  background:red;
-  color:white;
-  font-size:45px;
-  font-weight:bold;
-  cursor:pointer;
-  box-shadow:0 0 60px red;
-}
-
-#cameraScreen{
-  display:none;
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:black;
+#text{
+margin-top:20px;
+font-size:18px;
+opacity:0.8;
 }
 
 video{
-  width:100%;
-  height:100%;
-  object-fit:cover;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+object-fit:cover;
+display:none;
+z-index:-1;
 }
 </style>
 </head>
+
 <body>
 
-<div id="inicio">
-  <h1>LUMEN</h1>
-  <button onclick="activarSOS()">SOS</button>
-  <p>Presiona si necesitas ayuda</p>
-  <div id="estado"></div>
-</div>
+<video id="camera" autoplay playsinline></video>
 
-<div id="cameraScreen">
-  <video id="video" autoplay playsinline></video>
-</div>
+<button id="sosBtn">SOS</button>
+<div id="text">Presiona si necesitas ayuda</div>
 
 <script>
+const btn = document.getElementById("sosBtn");
+const cam = document.getElementById("camera");
 
-function activarSOS(){
+btn.addEventListener("click", async () => {
 
-  // 🔊 Sirena más fuerte tipo oscilador
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+    // Vibración
+    if(navigator.vibrate){
+        navigator.vibrate([500,200,500,200,1000]);
+    }
 
-  osc.type = "square";
-  osc.frequency.value = 1000;
-  gain.gain.value = 1;
+    // Sirena fuerte continua
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+    oscillator.frequency.linearRampToValueAtTime(1400, audioCtx.currentTime + 1);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    gainNode.gain.value = 1;
+    oscillator.start();
 
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start();
+    // Activar cámara
+    try{
+        const stream = await navigator.mediaDevices.getUserMedia({video:true});
+        cam.srcObject = stream;
+        cam.style.display = "block";
+        btn.style.display = "none";
+        document.getElementById("text").style.display = "none";
+    }catch(e){
+        alert("Permite acceso a la cámara");
+    }
 
-  setTimeout(()=> osc.stop(), 5000);
+    // Obtener ubicación y abrir WhatsApp
+    if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(function(position){
 
-  // 📳 Vibración
-  if(navigator.vibrate){
-    navigator.vibrate([1000,500,1000]);
-  }
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
 
-  // 📹 Activar cámara primero
-  navigator.mediaDevices.getUserMedia({video:true, audio:true})
-  .then(stream=>{
-      document.getElementById("inicio").style.display="none";
-      document.getElementById("cameraScreen").style.display="block";
-      document.getElementById("video").srcObject = stream;
-  })
-  .catch(error=>{
-      document.getElementById("estado").innerText = 
-      "Error cámara: " + error.message;
-  });
+            const mensaje =
+            "🚨 NECESITO AYUDA 🚨\n\n" +
+            "Mi ubicación en tiempo real:\n" +
+            "https://maps.google.com/?q=" + lat + "," + lon;
 
-  // 📍 Obtener ubicación
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(
-      function(position){
-        let lat = position.coords.latitude;
-        let lon = position.coords.longitude;
+            const numero = "5213319079914";
 
-        let mensaje =
-        "🚨 NECESITO AYUDA 🚨%0A" +
-        "Mi ubicación:%0A" +
-        "https://www.google.com/maps?q=" + lat + "," + lon;
+            const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(mensaje);
 
-        let numero = "521XXXXXXXXXX"; // CAMBIA ESTO
+            window.location.href = url;
 
-        // Redirección directa (no popup)
-        window.location.href =
-        "https://wa.me/" + numero + "?text=" + mensaje;
+        }, function(){
+            alert("Activa la ubicación en ajustes");
+        });
+    }
 
-      },
-      function(error){
-        document.getElementById("estado").innerText =
-        "Error ubicación: activa permisos en Safari";
-      }
-    );
-  }
-
-}
+});
 </script>
 
 </body>
