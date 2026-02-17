@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMEN</title>
+
+<style>
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  font-family:Arial, sans-serif;
+  background: radial-gradient(circle at center, #7b2cff, #1a0033);
+  color:white;
+  text-align:center;
+}
+
+h1{
+  position:absolute;
+  top:30px;
+  font-size:28px;
+  letter-spacing:4px;
+}
+
+button{
+  width:220px;
+  height:220px;
+  border-radius:50%;
+  border:none;
+  background:red;
+  color:white;
+  font-size:45px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 0 50px red;
+  transition:0.2s;
+}
+
+button:active{
+  transform:scale(0.95);
+  box-shadow:0 0 80px red;
+}
+
+p{
+  margin-top:25px;
+  font-size:18px;
+  opacity:0.85;
+}
+
+#ubicacion{
+  margin-top:20px;
+  font-size:14px;
+  opacity:0.9;
+}
+
+video{
+  display:none;
+}
+</style>
+</head>
+<body>
+
+<h1>LUMEN</h1>
+
+<button onclick="activarSOS()">SOS</button>
+
+<p>Presiona si necesitas ayuda</p>
+
+<div id="ubicacion"></div>
+
+<video id="video" autoplay playsinline></video>
+
+<script>
+let mediaRecorder;
+let recordedChunks = [];
+
+function activarSOS(){
+
+  // 🔊 Sonido fuerte
+  let audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+  audio.volume = 1.0;
+  audio.play();
+
+  // 📳 Vibración (si está disponible)
+  if (navigator.vibrate) {
+    navigator.vibrate([500, 200, 500, 200, 1000]);
+  }
+
+  // 📍 Obtener ubicación
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(position){
+        let lat = position.coords.latitude;
+        let lon = position.coords.longitude;
+
+        document.getElementById("ubicacion").innerHTML =
+          "Ubicación detectada:<br>Lat: " + lat +
+          "<br>Lon: " + lon;
+      },
+      function(error){
+        document.getElementById("ubicacion").innerText =
+          "No se pudo obtener la ubicación.";
+      }
+    );
+  }
+
+  // 📷 Activar cámara y grabar
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+  .then(stream => {
+
+    let video = document.getElementById("video");
+    video.srcObject = stream;
+
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = event => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.start();
+
+  })
+  .catch(error => {
+    alert("No se pudo acceder a la cámara: " + error);
+  });
+
+}
+</script>
+
+</body>
+</html>
