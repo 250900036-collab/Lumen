@@ -67,7 +67,7 @@ btn.addEventListener("click", async () => {
         navigator.vibrate([500,200,500,200,1000]);
     }
 
-    // Sirena fuerte continua
+    // Sirena fuerte
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
@@ -93,7 +93,7 @@ btn.addEventListener("click", async () => {
         alert("Permite acceso a la cámara");
     }
 
-    // Obtener ubicación y abrir WhatsApp SIN número fijo
+    // Obtener ubicación
     if(navigator.geolocation){
         navigator.geolocation.getCurrentPosition(function(position){
 
@@ -105,7 +105,7 @@ btn.addEventListener("click", async () => {
             "Mi ubicación:\n" +
             "https://maps.google.com/?q=" + lat + "," + lon;
 
-            const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(mensaje);
+            const url = "whatsapp://send?text=" + encodeURIComponent(mensaje);
 
             window.location.href = url;
 
