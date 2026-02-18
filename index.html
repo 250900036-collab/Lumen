@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Emergency App</title>
+<title>LUMEN</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6a00ff">
 
 <style>
 body{
 margin:0;
 font-family:Arial, sans-serif;
-background:#12002b;
+background:#140028;
 color:white;
 overflow:hidden;
 }
 
-/* Fondo partículas */
 canvas{
 position:fixed;
 top:0;
@@ -22,170 +24,225 @@ left:0;
 z-index:-1;
 }
 
-/* Fade */
-.page{
+.screen{
 position:absolute;
 width:100%;
-height:100%;
+height:100vh;
 display:flex;
 flex-direction:column;
 justify-content:center;
 align-items:center;
+text-align:center;
 opacity:0;
-transition:opacity .6s ease;
+transition:opacity 0.8s ease;
 }
 
-.page.active{
+.active{
 opacity:1;
 }
 
-/* Botones */
-button{
-padding:15px 25px;
-margin:10px;
-border:none;
-border-radius:30px;
-font-size:16px;
-cursor:pointer;
+.title{
+font-size:55px;
+text-shadow:0 0 15px #fff,0 0 30px #a020f0,0 0 60px #ff00ff;
+animation:floatUp 4s ease-in-out infinite alternate;
 }
 
-.red{
+@keyframes floatUp{
+0%{transform:translateY(20px);}
+100%{transform:translateY(-20px);}
+}
+
+input{
+padding:12px;
+margin:8px;
+border-radius:10px;
+border:none;
+width:230px;
+outline:none;
+}
+
+button{
+padding:12px 25px;
+border-radius:10px;
+border:none;
+margin-top:10px;
+font-weight:bold;
+cursor:pointer;
+background:#a020f0;
+color:white;
+}
+
+#sosBtn{
+width:200px;
+height:200px;
+border-radius:50%;
 background:red;
 color:white;
+font-size:35px;
+box-shadow:0 0 40px red;
+margin-top:30px;
+animation:pulse 1.5s infinite;
 }
 
-.green{
-background:#25D366;
-color:white;
+@keyframes pulse{
+0%{transform:scale(1);box-shadow:0 0 30px red;}
+50%{transform:scale(1.1);box-shadow:0 0 80px red;}
+100%{transform:scale(1);box-shadow:0 0 30px red;}
 }
 </style>
 </head>
+
 <body>
 
 <canvas id="particles"></canvas>
 
-<!-- Registro -->
-<div id="registerPage" class="page active">
-<h2>Registro</h2>
-<input id="nameInput" placeholder="Tu nombre" style="padding:10px;border-radius:10px;border:none;margin:10px;">
-<button onclick="saveUser()">Guardar</button>
+<div id="welcome" class="screen active">
+<h1 class="title">LUMEN</h1>
+<p>Bienvenido</p>
 </div>
 
-<!-- Principal -->
-<div id="homePage" class="page">
-<h1 id="welcomeText"></h1>
-<button class="red" onclick="startRecording()">🔴 Grabar</button>
-<button onclick="stopRecording()">Detener</button>
-<button class="green" onclick="sendWhatsApp()">WhatsApp</button>
-<button onclick="enableMotion()">Activar Sensor 911</button>
+<div id="auth" class="screen">
+<h1 class="title">LUMEN</h1>
+<input type="text" id="user" placeholder="Usuario">
+<input type="password" id="pass" placeholder="Contraseña">
+<button onclick="register()">Registrarse</button>
+<button onclick="login()">Iniciar Sesión</button>
+<p id="msg"></p>
+</div>
+
+<div id="app" class="screen">
+<h1 class="title">LUMEN</h1>
+<button id="sosBtn">SOS</button>
+<button onclick="logout()">Cerrar sesión</button>
 </div>
 
 <script>
-/* ====== TRANSICIÓN ====== */
-function goTo(page){
-document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-document.getElementById(page).classList.add('active');
+
+/* ELEMENTOS */
+const welcome = document.getElementById("welcome");
+const auth = document.getElementById("auth");
+const app = document.getElementById("app");
+const user = document.getElementById("user");
+const pass = document.getElementById("pass");
+const msg = document.getElementById("msg");
+const sosBtn = document.getElementById("sosBtn");
+
+/* FADE */
+function showScreen(screen){
+document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+screen.classList.add("active");
 }
 
-/* ====== REGISTRO ====== */
-function saveUser(){
-let name = document.getElementById("nameInput").value.trim();
-if(name===""){
-alert("Escribe tu nombre");
-return;
+/* BIENVENIDA */
+setTimeout(()=>{
+if(localStorage.getItem("lumenLogged")==="true"){
+showScreen(app);
+}else{
+showScreen(auth);
 }
-localStorage.setItem("userName",name);
-document.getElementById("welcomeText").innerText="Bienvenido "+name;
-goTo("homePage");
-}
+},3000);
 
-/* Auto login */
-window.onload=function(){
-let name=localStorage.getItem("userName");
-if(name){
-document.getElementById("welcomeText").innerText="Bienvenido "+name;
-goTo("homePage");
-}
-}
-
-/* ====== GRABACIÓN ====== */
-let mediaRecorder;
-let audioChunks=[];
-
-async function startRecording(){
-try{
-const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-mediaRecorder=new MediaRecorder(stream);
-
-mediaRecorder.ondataavailable=e=>{
-audioChunks.push(e.data);
-};
-
-mediaRecorder.onstop=()=>{
-const blob=new Blob(audioChunks,{type:'audio/webm'});
-audioChunks=[];
-console.log("Grabación lista",blob);
-};
-
-mediaRecorder.start();
-alert("Grabando...");
-}catch(err){
-alert("Permite acceso al micrófono");
-console.error(err);
+/* REGISTRO */
+function register(){
+if(user.value && pass.value){
+localStorage.setItem("lumenUser",user.value);
+localStorage.setItem("lumenPass",pass.value);
+msg.innerText="Usuario creado";
 }
 }
 
-function stopRecording(){
-if(mediaRecorder && mediaRecorder.state!=="inactive"){
-mediaRecorder.stop();
-alert("Grabación detenida");
+/* LOGIN */
+function login(){
+if(user.value===localStorage.getItem("lumenUser") &&
+pass.value===localStorage.getItem("lumenPass")){
+localStorage.setItem("lumenLogged","true");
+showScreen(app);
+}else{
+msg.innerText="Datos incorrectos";
 }
 }
 
-/* ====== WHATSAPP ====== */
-function sendWhatsApp(){
-let mensaje=encodeURIComponent("Necesito ayuda, esta es mi ubicación.");
-let numero="521XXXXXXXXXX"; // CAMBIA POR TU NÚMERO
-window.location.href=`https://wa.me/${numero}?text=${mensaje}`;
+/* LOGOUT */
+function logout(){
+localStorage.removeItem("lumenLogged");
+location.reload();
 }
 
-/* ====== SENSOR 911 ====== */
-let shakeThreshold=18;
-let lastX,lastY,lastZ;
-let canShake=false;
+/* ===== ALARMA PRECARGADA ===== */
+const alarm = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+alarm.load();
+
+function playAlarm(){
+alarm.currentTime=0;
+alarm.play().catch(()=>{});
+}
+
+/* ===== PERMISO SENSOR (iPhone fix) ===== */
+let motionEnabled=false;
 
 function enableMotion(){
-
-if(typeof DeviceMotionEvent!=="undefined" &&
-typeof DeviceMotionEvent.requestPermission==="function"){
-
-DeviceMotionEvent.requestPermission()
-.then(response=>{
-if(response==="granted"){
-canShake=true;
-window.addEventListener("devicemotion",detectShake);
-alert("Sensor activado");
+if(typeof DeviceMotionEvent!=='undefined' &&
+typeof DeviceMotionEvent.requestPermission==='function'){
+DeviceMotionEvent.requestPermission().then(response=>{
+if(response==='granted'){
+window.addEventListener('devicemotion',detectShake);
+motionEnabled=true;
 }
-})
-.catch(console.error);
-
+});
 }else{
-canShake=true;
-window.addEventListener("devicemotion",detectShake);
-alert("Sensor activado");
+window.addEventListener('devicemotion',detectShake);
+motionEnabled=true;
 }
 }
+
+document.addEventListener("click", enableMotion, {once:true});
+
+/* ===== BOTON SOS ===== */
+sosBtn.addEventListener("click",()=>{
+
+playAlarm();
+
+if(navigator.vibrate){
+navigator.vibrate([500,200,500]);
+}
+
+navigator.geolocation.getCurrentPosition(
+pos=>{
+const lat=pos.coords.latitude;
+const lon=pos.coords.longitude;
+
+const mensaje="🚨 NECESITO AYUDA 🚨 https://maps.google.com/?q="+lat+","+lon;
+const encoded=encodeURIComponent(mensaje);
+
+/* App WhatsApp */
+window.location.href="whatsapp://send?text="+encoded;
+
+/* Fallback web */
+setTimeout(()=>{
+window.location.href="https://wa.me/?text="+encoded;
+},1500);
+
+},
+()=>{
+alert("Activa permisos de ubicación.");
+}
+);
+
+});
+
+/* ===== AGITAR = 911 ===== */
+let shakeThreshold=18;
+let lastX=null,lastY=null,lastZ=null;
+let shakeBlock=false;
 
 function detectShake(event){
-if(!canShake) return;
+if(!motionEnabled) return;
 
-let acc=event.accelerationIncludingGravity;
+const acc=event.accelerationIncludingGravity;
 if(!acc) return;
 
-if(lastX===undefined){
-lastX=acc.x;
-lastY=acc.y;
-lastZ=acc.z;
+if(lastX===null){
+lastX=acc.x; lastY=acc.y; lastZ=acc.z;
 return;
 }
 
@@ -194,7 +251,17 @@ let deltaY=Math.abs(lastY-acc.y);
 let deltaZ=Math.abs(lastZ-acc.z);
 
 if(deltaX>shakeThreshold || deltaY>shakeThreshold || deltaZ>shakeThreshold){
+if(!shakeBlock){
+shakeBlock=true;
+
+if(navigator.vibrate){
+navigator.vibrate([300,100,300]);
+}
+
 window.location.href="tel:911";
+
+setTimeout(()=>{shakeBlock=false;},5000);
+}
 }
 
 lastX=acc.x;
@@ -202,39 +269,41 @@ lastY=acc.y;
 lastZ=acc.z;
 }
 
-/* ====== PARTÍCULAS ====== */
+/* ===== PARTICULAS ===== */
 const canvas=document.getElementById("particles");
 const ctx=canvas.getContext("2d");
-
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 
 let particles=[];
-
-for(let i=0;i<80;i++){
+for(let i=0;i<60;i++){
 particles.push({
 x:Math.random()*canvas.width,
 y:Math.random()*canvas.height,
-radius:Math.random()*3+1,
-speed:Math.random()*0.5+0.2
+r:Math.random()*3+1,
+d:Math.random()*1
 });
 }
 
-function animate(){
+function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
-ctx.fillStyle="purple";
+ctx.fillStyle="rgba(160,32,240,0.7)";
 particles.forEach(p=>{
-p.y-=p.speed;
-if(p.y<0)p.y=canvas.height;
 ctx.beginPath();
-ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
 ctx.fill();
+p.y-=p.d;
+if(p.y<0){p.y=canvas.height;}
 });
-requestAnimationFrame(animate);
+requestAnimationFrame(draw);
+}
+draw();
+
+/* SERVICE WORKER */
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('sw.js');
 }
 
-animate();
 </script>
-
 </body>
 </html>
