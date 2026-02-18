@@ -17,6 +17,7 @@ color:white;
 overflow:hidden;
 }
 
+/* PARTICULAS */
 canvas{
 position:fixed;
 top:0;
@@ -24,6 +25,7 @@ left:0;
 z-index:-1;
 }
 
+/* PANTALLAS */
 .screen{
 position:absolute;
 width:100%;
@@ -35,12 +37,15 @@ align-items:center;
 text-align:center;
 opacity:0;
 transition:opacity 0.8s ease;
+pointer-events:none; /* 🔥 FIX IMPORTANTE */
 }
 
 .active{
 opacity:1;
+pointer-events:auto; /* 🔥 SOLO LA ACTIVA RECIBE CLICS */
 }
 
+/* TITULO FLOTANTE */
 .title{
 font-size:55px;
 text-shadow:0 0 15px #fff,0 0 30px #a020f0,0 0 60px #ff00ff;
@@ -52,6 +57,7 @@ animation:floatUp 4s ease-in-out infinite alternate;
 100%{transform:translateY(-20px);}
 }
 
+/* INPUTS */
 input{
 padding:12px;
 margin:8px;
@@ -61,6 +67,7 @@ width:230px;
 outline:none;
 }
 
+/* BOTONES */
 button{
 padding:12px 25px;
 border-radius:10px;
@@ -72,6 +79,7 @@ background:#a020f0;
 color:white;
 }
 
+/* BOTON SOS */
 #sosBtn{
 width:200px;
 height:200px;
@@ -96,11 +104,13 @@ animation:pulse 1.5s infinite;
 
 <canvas id="particles"></canvas>
 
+<!-- BIENVENIDA -->
 <div id="welcome" class="screen active">
 <h1 class="title">LUMEN</h1>
 <p>Bienvenido</p>
 </div>
 
+<!-- LOGIN -->
 <div id="auth" class="screen">
 <h1 class="title">LUMEN</h1>
 <input type="text" id="user" placeholder="Usuario">
@@ -110,6 +120,7 @@ animation:pulse 1.5s infinite;
 <p id="msg"></p>
 </div>
 
+<!-- APP -->
 <div id="app" class="screen">
 <h1 class="title">LUMEN</h1>
 <button id="sosBtn">SOS</button>
@@ -127,13 +138,13 @@ const pass = document.getElementById("pass");
 const msg = document.getElementById("msg");
 const sosBtn = document.getElementById("sosBtn");
 
-/* FADE */
+/* TRANSICION */
 function showScreen(screen){
 document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
 screen.classList.add("active");
 }
 
-/* BIENVENIDA */
+/* BIENVENIDA 3s */
 setTimeout(()=>{
 if(localStorage.getItem("lumenLogged")==="true"){
 showScreen(app);
@@ -147,7 +158,7 @@ function register(){
 if(user.value && pass.value){
 localStorage.setItem("lumenUser",user.value);
 localStorage.setItem("lumenPass",pass.value);
-msg.innerText="Usuario creado";
+msg.innerText="Usuario creado correctamente";
 }
 }
 
@@ -168,7 +179,7 @@ localStorage.removeItem("lumenLogged");
 location.reload();
 }
 
-/* ===== ALARMA PRECARGADA ===== */
+/* ALARMA */
 const alarm = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
 alarm.load();
 
@@ -177,7 +188,7 @@ alarm.currentTime=0;
 alarm.play().catch(()=>{});
 }
 
-/* ===== PERMISO SENSOR (iPhone fix) ===== */
+/* PERMISO SENSOR iPhone */
 let motionEnabled=false;
 
 function enableMotion(){
@@ -197,7 +208,7 @@ motionEnabled=true;
 
 document.addEventListener("click", enableMotion, {once:true});
 
-/* ===== BOTON SOS ===== */
+/* SOS */
 sosBtn.addEventListener("click",()=>{
 
 playAlarm();
@@ -214,10 +225,10 @@ const lon=pos.coords.longitude;
 const mensaje="🚨 NECESITO AYUDA 🚨 https://maps.google.com/?q="+lat+","+lon;
 const encoded=encodeURIComponent(mensaje);
 
-/* App WhatsApp */
+/* Intentar abrir app WhatsApp */
 window.location.href="whatsapp://send?text="+encoded;
 
-/* Fallback web */
+/* Fallback navegador */
 setTimeout(()=>{
 window.location.href="https://wa.me/?text="+encoded;
 },1500);
@@ -230,7 +241,7 @@ alert("Activa permisos de ubicación.");
 
 });
 
-/* ===== AGITAR = 911 ===== */
+/* AGITAR = 911 */
 let shakeThreshold=18;
 let lastX=null,lastY=null,lastZ=null;
 let shakeBlock=false;
@@ -269,7 +280,7 @@ lastY=acc.y;
 lastZ=acc.z;
 }
 
-/* ===== PARTICULAS ===== */
+/* PARTICULAS */
 const canvas=document.getElementById("particles");
 const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
