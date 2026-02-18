@@ -1,15 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LUMEN</title>
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6a00ff">
+
 <style>
 body{
 margin:0;
 font-family:Arial, sans-serif;
-background: radial-gradient(circle at center, #6a00ff, #1a001f);
+background:#1a0033;
 color:white;
 display:flex;
 justify-content:center;
@@ -18,192 +21,158 @@ height:100vh;
 overflow:hidden;
 }
 
-/* Pantallas */
 .screen{
-display:none;
+display:flex;
 flex-direction:column;
 align-items:center;
 text-align:center;
-width:90%;
 }
 
-.active{
-display:flex;
-}
-
-/* Título brillante */
 .title{
 font-size:50px;
-font-weight:bold;
+text-shadow:0 0 15px #fff,0 0 30px #a020f0,0 0 50px #ff00ff;
 margin-bottom:30px;
-text-shadow:0 0 10px #fff, 0 0 20px #a020f0, 0 0 40px #ff00ff;
 }
 
-/* Botón SOS */
-#sosBtn{
-width:220px;
-height:220px;
-border-radius:50%;
-background:red;
-color:white;
-font-size:40px;
-border:none;
-box-shadow:0 0 40px red;
-margin-top:20px;
-}
-
-/* Caja resaltada */
-.infoBox{
-margin-top:20px;
-padding:15px 25px;
-border:2px solid #fff;
-border-radius:10px;
-background:rgba(255,255,255,0.1);
-font-size:18px;
-}
-
-/* Inputs */
 input{
-padding:10px;
-margin:10px;
-border-radius:8px;
+padding:12px;
+margin:8px;
+border-radius:10px;
 border:none;
-width:220px;
+width:230px;
+outline:none;
 }
 
 button{
-padding:10px 20px;
-border-radius:8px;
+padding:12px 25px;
+border-radius:10px;
 border:none;
 margin-top:10px;
 font-weight:bold;
+cursor:pointer;
+background:#a020f0;
+color:white;
 }
 
-video{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-object-fit:cover;
+button:hover{
+opacity:0.85;
+}
+
+#sosBtn{
+width:200px;
+height:200px;
+border-radius:50%;
+background:red;
+color:white;
+font-size:35px;
+box-shadow:0 0 40px red;
+margin-top:30px;
+}
+
+.hidden{
 display:none;
-z-index:-1;
 }
 </style>
 </head>
 
 <body>
 
-<!-- INTRO -->
-<div id="intro" class="screen active">
-<h1 class="title">LUMEN</h1>
-<p>Tu luz en momentos de emergencia.</p>
-<button onclick="goToAuth()">Comenzar</button>
-</div>
-
-<!-- LOGIN / REGISTER -->
 <div id="auth" class="screen">
-<h2>Acceso Seguro</h2>
+<h1 class="title">LUMEN</h1>
 <input type="text" id="user" placeholder="Usuario">
 <input type="password" id="pass" placeholder="Contraseña">
 <button onclick="register()">Registrarse</button>
 <button onclick="login()">Iniciar Sesión</button>
-<p id="authMsg"></p>
+<p id="msg"></p>
 </div>
 
-<!-- APP PRINCIPAL -->
-<div id="app" class="screen">
+<div id="app" class="screen hidden">
 <h1 class="title">LUMEN</h1>
 <button id="sosBtn">SOS</button>
-<div class="infoBox">Presiona si necesitas ayuda</div>
+<button onclick="logout()">Cerrar sesión</button>
 </div>
 
-<video id="camera" autoplay playsinline></video>
-
 <script>
-function goToAuth(){
-document.getElementById("intro").classList.remove("active");
-document.getElementById("auth").classList.add("active");
+
+/* VARIABLES SEGURAS PARA SAFARI */
+const auth = document.getElementById("auth");
+const app = document.getElementById("app");
+const user = document.getElementById("user");
+const pass = document.getElementById("pass");
+const msg = document.getElementById("msg");
+const sosBtn = document.getElementById("sosBtn");
+
+/* SONIDO */
+function clickSound(){
+const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
+audio.play();
 }
 
+/* RECORDAR SESIÓN */
+if(localStorage.getItem("lumenLogged")==="true"){
+auth.classList.add("hidden");
+app.classList.remove("hidden");
+}
+
+/* REGISTRO */
 function register(){
-const u = document.getElementById("user").value;
-const p = document.getElementById("pass").value;
-
-if(u && p){
-localStorage.setItem("lumenUser", u);
-localStorage.setItem("lumenPass", p);
-document.getElementById("authMsg").innerText="Usuario creado correctamente";
+clickSound();
+if(user.value && pass.value){
+localStorage.setItem("lumenUser",user.value);
+localStorage.setItem("lumenPass",pass.value);
+msg.innerText="Usuario creado correctamente";
 }else{
-document.getElementById("authMsg").innerText="Completa los campos";
+msg.innerText="Completa los campos";
 }
 }
 
+/* LOGIN */
 function login(){
-const u = document.getElementById("user").value;
-const p = document.getElementById("pass").value;
-
-if(u === localStorage.getItem("lumenUser") && 
-   p === localStorage.getItem("lumenPass")){
-document.getElementById("auth").classList.remove("active");
-document.getElementById("app").classList.add("active");
+clickSound();
+if(user.value===localStorage.getItem("lumenUser") &&
+pass.value===localStorage.getItem("lumenPass")){
+localStorage.setItem("lumenLogged","true");
+auth.classList.add("hidden");
+app.classList.remove("hidden");
 }else{
-document.getElementById("authMsg").innerText="Datos incorrectos";
+msg.innerText="Datos incorrectos";
 }
 }
 
-/* SOS FUNCIONALIDAD */
-const btn = document.getElementById("sosBtn");
-const cam = document.getElementById("camera");
+/* LOGOUT */
+function logout(){
+localStorage.removeItem("lumenLogged");
+location.reload();
+}
 
-btn.addEventListener("click", async () => {
+/* BOTÓN SOS */
+sosBtn.addEventListener("click",()=>{
+
+clickSound();
 
 if(navigator.vibrate){
-navigator.vibrate([500,200,500,200,1000]);
+navigator.vibrate([500,200,500]);
 }
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const oscillator = audioCtx.createOscillator();
-const gainNode = audioCtx.createGain();
-
-oscillator.type="sawtooth";
-oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-oscillator.frequency.linearRampToValueAtTime(1400, audioCtx.currentTime + 1);
-
-oscillator.connect(gainNode);
-gainNode.connect(audioCtx.destination);
-gainNode.gain.value=1;
-oscillator.start();
-
-try{
-const stream = await navigator.mediaDevices.getUserMedia({video:true});
-cam.srcObject = stream;
-cam.style.display="block";
-document.getElementById("app").style.display="none";
-}catch(e){
-alert("Permite acceso a la cámara");
+navigator.geolocation.getCurrentPosition(
+pos=>{
+const lat=pos.coords.latitude;
+const lon=pos.coords.longitude;
+const mensaje="🚨 NECESITO AYUDA 🚨 https://maps.google.com/?q="+lat+","+lon;
+window.location.href="https://wa.me/?text="+encodeURIComponent(mensaje);
+},
+err=>{
+alert("Activa los permisos de ubicación en tu navegador.");
 }
-
-if(navigator.geolocation){
-navigator.geolocation.getCurrentPosition(function(position){
-
-const lat = position.coords.latitude;
-const lon = position.coords.longitude;
-
-const mensaje =
-"🚨 NECESITO AYUDA 🚨\n\n" +
-"Mi ubicación:\n" +
-"https://maps.google.com/?q=" + lat + "," + lon;
-
-const url = "whatsapp://send?text=" + encodeURIComponent(mensaje);
-
-window.location.href = url;
+);
 
 });
+
+/* SERVICE WORKER */
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('sw.js');
 }
 
-});
 </script>
-
 </body>
 </html>
