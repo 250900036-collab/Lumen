@@ -21,19 +21,32 @@ height:100vh;
 overflow:hidden;
 }
 
+/* PANTALLAS */
 .screen{
+position:absolute;
 display:flex;
 flex-direction:column;
 align-items:center;
 text-align:center;
 }
 
-.title{
-font-size:50px;
-text-shadow:0 0 15px #fff,0 0 30px #a020f0,0 0 50px #ff00ff;
-margin-bottom:30px;
+.hidden{
+display:none;
 }
 
+/* ANIMACIÓN FLOTANTE DEL TÍTULO */
+.title{
+font-size:55px;
+text-shadow:0 0 15px #fff,0 0 30px #a020f0,0 0 60px #ff00ff;
+animation:floatUp 4s ease-in-out infinite alternate;
+}
+
+@keyframes floatUp{
+0%{transform:translateY(20px);}
+100%{transform:translateY(-20px);}
+}
+
+/* BOTONES */
 input{
 padding:12px;
 margin:8px;
@@ -54,10 +67,7 @@ background:#a020f0;
 color:white;
 }
 
-button:hover{
-opacity:0.85;
-}
-
+/* BOTÓN SOS ANIMADO */
 #sosBtn{
 width:200px;
 height:200px;
@@ -67,17 +77,27 @@ color:white;
 font-size:35px;
 box-shadow:0 0 40px red;
 margin-top:30px;
+animation:pulse 1.5s infinite;
 }
 
-.hidden{
-display:none;
+@keyframes pulse{
+0%{transform:scale(1);box-shadow:0 0 30px red;}
+50%{transform:scale(1.1);box-shadow:0 0 80px red;}
+100%{transform:scale(1);box-shadow:0 0 30px red;}
 }
 </style>
 </head>
 
 <body>
 
-<div id="auth" class="screen">
+<!-- BIENVENIDA -->
+<div id="welcome" class="screen">
+<h1 class="title">LUMEN</h1>
+<p>Bienvenido</p>
+</div>
+
+<!-- LOGIN -->
+<div id="auth" class="screen hidden">
 <h1 class="title">LUMEN</h1>
 <input type="text" id="user" placeholder="Usuario">
 <input type="password" id="pass" placeholder="Contraseña">
@@ -86,6 +106,7 @@ display:none;
 <p id="msg"></p>
 </div>
 
+<!-- APP -->
 <div id="app" class="screen hidden">
 <h1 class="title">LUMEN</h1>
 <button id="sosBtn">SOS</button>
@@ -94,7 +115,7 @@ display:none;
 
 <script>
 
-/* VARIABLES SEGURAS PARA SAFARI */
+const welcome = document.getElementById("welcome");
 const auth = document.getElementById("auth");
 const app = document.getElementById("app");
 const user = document.getElementById("user");
@@ -102,33 +123,32 @@ const pass = document.getElementById("pass");
 const msg = document.getElementById("msg");
 const sosBtn = document.getElementById("sosBtn");
 
-/* SONIDO */
-function clickSound(){
-const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
-audio.play();
+let mediaRecorder;
+let audioChunks = [];
+
+/* PANTALLA DE BIENVENIDA 3 SEGUNDOS */
+setTimeout(()=>{
+welcome.classList.add("hidden");
+
+if(localStorage.getItem("lumenLogged")==="true"){
+app.classList.remove("hidden");
+}else{
+auth.classList.remove("hidden");
 }
 
-/* RECORDAR SESIÓN */
-if(localStorage.getItem("lumenLogged")==="true"){
-auth.classList.add("hidden");
-app.classList.remove("hidden");
-}
+},3000);
 
 /* REGISTRO */
 function register(){
-clickSound();
 if(user.value && pass.value){
 localStorage.setItem("lumenUser",user.value);
 localStorage.setItem("lumenPass",pass.value);
 msg.innerText="Usuario creado correctamente";
-}else{
-msg.innerText="Completa los campos";
 }
 }
 
 /* LOGIN */
 function login(){
-clickSound();
 if(user.value===localStorage.getItem("lumenUser") &&
 pass.value===localStorage.getItem("lumenPass")){
 localStorage.setItem("lumenLogged","true");
@@ -145,15 +165,38 @@ localStorage.removeItem("lumenLogged");
 location.reload();
 }
 
-/* BOTÓN SOS */
-sosBtn.addEventListener("click",()=>{
+/* ALARMA */
+function playAlarm(){
+const alarm = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+alarm.loop = true;
+alarm.play();
+setTimeout(()=>alarm.pause(),5000);
+}
 
-clickSound();
+/* SOS */
+sosBtn.addEventListener("click",async ()=>{
+
+playAlarm();
 
 if(navigator.vibrate){
 navigator.vibrate([500,200,500]);
 }
 
+/* GRABAR AUDIO 5s */
+try{
+const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+mediaRecorder = new MediaRecorder(stream);
+mediaRecorder.start();
+
+setTimeout(()=>{
+mediaRecorder.stop();
+},5000);
+
+}catch(err){
+alert("Activa permisos de micrófono.");
+}
+
+/* UBICACIÓN */
 navigator.geolocation.getCurrentPosition(
 pos=>{
 const lat=pos.coords.latitude;
@@ -162,7 +205,7 @@ const mensaje="🚨 NECESITO AYUDA 🚨 https://maps.google.com/?q="+lat+","+lon
 window.location.href="https://wa.me/?text="+encodeURIComponent(mensaje);
 },
 err=>{
-alert("Activa los permisos de ubicación en tu navegador.");
+alert("Activa permisos de ubicación.");
 }
 );
 
