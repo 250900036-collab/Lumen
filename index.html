@@ -8,17 +8,38 @@
 <style>
 body{
 margin:0;
-height:100vh;
+font-family:Arial, sans-serif;
+background: radial-gradient(circle at center, #6a00ff, #1a001f);
+color:white;
 display:flex;
-flex-direction:column;
 justify-content:center;
 align-items:center;
-background: radial-gradient(circle at center, #6a00ff, #1a001f);
-font-family:Arial;
-color:white;
+height:100vh;
 overflow:hidden;
 }
 
+/* Pantallas */
+.screen{
+display:none;
+flex-direction:column;
+align-items:center;
+text-align:center;
+width:90%;
+}
+
+.active{
+display:flex;
+}
+
+/* Título brillante */
+.title{
+font-size:50px;
+font-weight:bold;
+margin-bottom:30px;
+text-shadow:0 0 10px #fff, 0 0 20px #a020f0, 0 0 40px #ff00ff;
+}
+
+/* Botón SOS */
 #sosBtn{
 width:220px;
 height:220px;
@@ -28,12 +49,34 @@ color:white;
 font-size:40px;
 border:none;
 box-shadow:0 0 40px red;
+margin-top:20px;
 }
 
-#text{
+/* Caja resaltada */
+.infoBox{
 margin-top:20px;
+padding:15px 25px;
+border:2px solid #fff;
+border-radius:10px;
+background:rgba(255,255,255,0.1);
 font-size:18px;
-opacity:0.8;
+}
+
+/* Inputs */
+input{
+padding:10px;
+margin:10px;
+border-radius:8px;
+border:none;
+width:220px;
+}
+
+button{
+padding:10px 20px;
+border-radius:8px;
+border:none;
+margin-top:10px;
+font-weight:bold;
 }
 
 video{
@@ -51,68 +94,113 @@ z-index:-1;
 
 <body>
 
+<!-- INTRO -->
+<div id="intro" class="screen active">
+<h1 class="title">LUMEN</h1>
+<p>Tu luz en momentos de emergencia.</p>
+<button onclick="goToAuth()">Comenzar</button>
+</div>
+
+<!-- LOGIN / REGISTER -->
+<div id="auth" class="screen">
+<h2>Acceso Seguro</h2>
+<input type="text" id="user" placeholder="Usuario">
+<input type="password" id="pass" placeholder="Contraseña">
+<button onclick="register()">Registrarse</button>
+<button onclick="login()">Iniciar Sesión</button>
+<p id="authMsg"></p>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="app" class="screen">
+<h1 class="title">LUMEN</h1>
+<button id="sosBtn">SOS</button>
+<div class="infoBox">Presiona si necesitas ayuda</div>
+</div>
+
 <video id="camera" autoplay playsinline></video>
 
-<button id="sosBtn">SOS</button>
-<div id="text">Presiona si necesitas ayuda</div>
-
 <script>
+function goToAuth(){
+document.getElementById("intro").classList.remove("active");
+document.getElementById("auth").classList.add("active");
+}
+
+function register(){
+const u = document.getElementById("user").value;
+const p = document.getElementById("pass").value;
+
+if(u && p){
+localStorage.setItem("lumenUser", u);
+localStorage.setItem("lumenPass", p);
+document.getElementById("authMsg").innerText="Usuario creado correctamente";
+}else{
+document.getElementById("authMsg").innerText="Completa los campos";
+}
+}
+
+function login(){
+const u = document.getElementById("user").value;
+const p = document.getElementById("pass").value;
+
+if(u === localStorage.getItem("lumenUser") && 
+   p === localStorage.getItem("lumenPass")){
+document.getElementById("auth").classList.remove("active");
+document.getElementById("app").classList.add("active");
+}else{
+document.getElementById("authMsg").innerText="Datos incorrectos";
+}
+}
+
+/* SOS FUNCIONALIDAD */
 const btn = document.getElementById("sosBtn");
 const cam = document.getElementById("camera");
 
 btn.addEventListener("click", async () => {
 
-    // Vibración
-    if(navigator.vibrate){
-        navigator.vibrate([500,200,500,200,1000]);
-    }
+if(navigator.vibrate){
+navigator.vibrate([500,200,500,200,1000]);
+}
 
-    // Sirena fuerte
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const oscillator = audioCtx.createOscillator();
+const gainNode = audioCtx.createGain();
 
-    oscillator.type = "sawtooth";
-    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-    oscillator.frequency.linearRampToValueAtTime(1400, audioCtx.currentTime + 1);
+oscillator.type="sawtooth";
+oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+oscillator.frequency.linearRampToValueAtTime(1400, audioCtx.currentTime + 1);
 
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    gainNode.gain.value = 1;
+oscillator.connect(gainNode);
+gainNode.connect(audioCtx.destination);
+gainNode.gain.value=1;
+oscillator.start();
 
-    oscillator.start();
+try{
+const stream = await navigator.mediaDevices.getUserMedia({video:true});
+cam.srcObject = stream;
+cam.style.display="block";
+document.getElementById("app").style.display="none";
+}catch(e){
+alert("Permite acceso a la cámara");
+}
 
-    // Activar cámara
-    try{
-        const stream = await navigator.mediaDevices.getUserMedia({video:true});
-        cam.srcObject = stream;
-        cam.style.display = "block";
-        btn.style.display = "none";
-        document.getElementById("text").style.display = "none";
-    }catch(e){
-        alert("Permite acceso a la cámara");
-    }
+if(navigator.geolocation){
+navigator.geolocation.getCurrentPosition(function(position){
 
-    // Obtener ubicación
-    if(navigator.geolocation){
-        navigator.geolocation.getCurrentPosition(function(position){
+const lat = position.coords.latitude;
+const lon = position.coords.longitude;
 
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
+const mensaje =
+"🚨 NECESITO AYUDA 🚨\n\n" +
+"Mi ubicación:\n" +
+"https://maps.google.com/?q=" + lat + "," + lon;
 
-            const mensaje =
-            "🚨 NECESITO AYUDA 🚨\n\n" +
-            "Mi ubicación:\n" +
-            "https://maps.google.com/?q=" + lat + "," + lon;
+const url = "whatsapp://send?text=" + encodeURIComponent(mensaje);
 
-            const url = "whatsapp://send?text=" + encodeURIComponent(mensaje);
+window.location.href = url;
 
-            window.location.href = url;
-
-        }, function(){
-            alert("Activa la ubicación en ajustes");
-        });
-    }
+});
+}
 
 });
 </script>
