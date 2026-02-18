@@ -12,29 +12,38 @@
 body{
 margin:0;
 font-family:Arial, sans-serif;
-background:#1a0033;
+background:#140028;
 color:white;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
 overflow:hidden;
+}
+
+/* PARTICULAS */
+canvas{
+position:fixed;
+top:0;
+left:0;
+z-index:-1;
 }
 
 /* PANTALLAS */
 .screen{
 position:absolute;
+width:100%;
+height:100vh;
 display:flex;
 flex-direction:column;
+justify-content:center;
 align-items:center;
 text-align:center;
+opacity:0;
+transition:opacity 0.8s ease;
 }
 
-.hidden{
-display:none;
+.active{
+opacity:1;
 }
 
-/* ANIMACIÓN FLOTANTE DEL TÍTULO */
+/* TITULO FLOTANTE */
 .title{
 font-size:55px;
 text-shadow:0 0 15px #fff,0 0 30px #a020f0,0 0 60px #ff00ff;
@@ -46,7 +55,7 @@ animation:floatUp 4s ease-in-out infinite alternate;
 100%{transform:translateY(-20px);}
 }
 
-/* BOTONES */
+/* INPUTS */
 input{
 padding:12px;
 margin:8px;
@@ -56,6 +65,7 @@ width:230px;
 outline:none;
 }
 
+/* BOTONES */
 button{
 padding:12px 25px;
 border-radius:10px;
@@ -67,7 +77,7 @@ background:#a020f0;
 color:white;
 }
 
-/* BOTÓN SOS ANIMADO */
+/* BOTON SOS */
 #sosBtn{
 width:200px;
 height:200px;
@@ -90,14 +100,16 @@ animation:pulse 1.5s infinite;
 
 <body>
 
+<canvas id="particles"></canvas>
+
 <!-- BIENVENIDA -->
-<div id="welcome" class="screen">
+<div id="welcome" class="screen active">
 <h1 class="title">LUMEN</h1>
 <p>Bienvenido</p>
 </div>
 
 <!-- LOGIN -->
-<div id="auth" class="screen hidden">
+<div id="auth" class="screen">
 <h1 class="title">LUMEN</h1>
 <input type="text" id="user" placeholder="Usuario">
 <input type="password" id="pass" placeholder="Contraseña">
@@ -107,7 +119,7 @@ animation:pulse 1.5s infinite;
 </div>
 
 <!-- APP -->
-<div id="app" class="screen hidden">
+<div id="app" class="screen">
 <h1 class="title">LUMEN</h1>
 <button id="sosBtn">SOS</button>
 <button onclick="logout()">Cerrar sesión</button>
@@ -115,6 +127,7 @@ animation:pulse 1.5s infinite;
 
 <script>
 
+/* ELEMENTOS */
 const welcome = document.getElementById("welcome");
 const auth = document.getElementById("auth");
 const app = document.getElementById("app");
@@ -123,19 +136,19 @@ const pass = document.getElementById("pass");
 const msg = document.getElementById("msg");
 const sosBtn = document.getElementById("sosBtn");
 
-let mediaRecorder;
-let audioChunks = [];
-
-/* PANTALLA DE BIENVENIDA 3 SEGUNDOS */
-setTimeout(()=>{
-welcome.classList.add("hidden");
-
-if(localStorage.getItem("lumenLogged")==="true"){
-app.classList.remove("hidden");
-}else{
-auth.classList.remove("hidden");
+/* TRANSICION FADE */
+function showScreen(screen){
+document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+screen.classList.add("active");
 }
 
+/* BIENVENIDA 3s */
+setTimeout(()=>{
+if(localStorage.getItem("lumenLogged")==="true"){
+showScreen(app);
+}else{
+showScreen(auth);
+}
 },3000);
 
 /* REGISTRO */
@@ -143,7 +156,7 @@ function register(){
 if(user.value && pass.value){
 localStorage.setItem("lumenUser",user.value);
 localStorage.setItem("lumenPass",pass.value);
-msg.innerText="Usuario creado correctamente";
+msg.innerText="Usuario creado";
 }
 }
 
@@ -152,8 +165,7 @@ function login(){
 if(user.value===localStorage.getItem("lumenUser") &&
 pass.value===localStorage.getItem("lumenPass")){
 localStorage.setItem("lumenLogged","true");
-auth.classList.add("hidden");
-app.classList.remove("hidden");
+showScreen(app);
 }else{
 msg.innerText="Datos incorrectos";
 }
@@ -168,13 +180,11 @@ location.reload();
 /* ALARMA */
 function playAlarm(){
 const alarm = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-alarm.loop = true;
 alarm.play();
-setTimeout(()=>alarm.pause(),5000);
 }
 
-/* SOS */
-sosBtn.addEventListener("click",async ()=>{
+/* SOS BOTON */
+sosBtn.addEventListener("click",()=>{
 
 playAlarm();
 
@@ -182,27 +192,15 @@ if(navigator.vibrate){
 navigator.vibrate([500,200,500]);
 }
 
-/* GRABAR AUDIO 5s */
-try{
-const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-mediaRecorder = new MediaRecorder(stream);
-mediaRecorder.start();
-
-setTimeout(()=>{
-mediaRecorder.stop();
-},5000);
-
-}catch(err){
-alert("Activa permisos de micrófono.");
-}
-
-/* UBICACIÓN */
 navigator.geolocation.getCurrentPosition(
 pos=>{
 const lat=pos.coords.latitude;
 const lon=pos.coords.longitude;
 const mensaje="🚨 NECESITO AYUDA 🚨 https://maps.google.com/?q="+lat+","+lon;
-window.location.href="https://wa.me/?text="+encodeURIComponent(mensaje);
+
+/* ABRIR APP WHATSAPP */
+window.location.href="whatsapp://send?text="+encodeURIComponent(mensaje);
+
 },
 err=>{
 alert("Activa permisos de ubicación.");
@@ -210,6 +208,88 @@ alert("Activa permisos de ubicación.");
 );
 
 });
+
+/* ===== AGITAR TELEFONO = LLAMAR 911 ===== */
+
+let shakeThreshold = 18;
+let lastX=null,lastY=null,lastZ=null;
+let shakeBlock=false;
+
+function detectShake(event){
+const acc = event.accelerationIncludingGravity;
+if(!acc) return;
+
+if(lastX===null){
+lastX=acc.x; lastY=acc.y; lastZ=acc.z;
+return;
+}
+
+let deltaX=Math.abs(lastX-acc.x);
+let deltaY=Math.abs(lastY-acc.y);
+let deltaZ=Math.abs(lastZ-acc.z);
+
+if(deltaX>shakeThreshold || deltaY>shakeThreshold || deltaZ>shakeThreshold){
+
+if(!shakeBlock){
+shakeBlock=true;
+
+if(navigator.vibrate){
+navigator.vibrate([300,100,300]);
+}
+
+/* LLAMAR 911 */
+window.location.href="tel:911";
+
+setTimeout(()=>{shakeBlock=false;},5000);
+}
+}
+
+lastX=acc.x;
+lastY=acc.y;
+lastZ=acc.z;
+}
+
+/* PERMISO iOS */
+if(typeof DeviceMotionEvent!=='undefined' &&
+typeof DeviceMotionEvent.requestPermission==='function'){
+DeviceMotionEvent.requestPermission().then(response=>{
+if(response==='granted'){
+window.addEventListener('devicemotion',detectShake);
+}
+});
+}else{
+window.addEventListener('devicemotion',detectShake);
+}
+
+/* PARTICULAS */
+const canvas=document.getElementById("particles");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let particles=[];
+for(let i=0;i<60;i++){
+particles.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+r:Math.random()*3+1,
+d:Math.random()*1
+});
+}
+
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="rgba(160,32,240,0.7)";
+particles.forEach(p=>{
+ctx.beginPath();
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+ctx.fill();
+p.y-=p.d;
+if(p.y<0){p.y=canvas.height;}
+});
+requestAnimationFrame(draw);
+}
+draw();
 
 /* SERVICE WORKER */
 if('serviceWorker' in navigator){
